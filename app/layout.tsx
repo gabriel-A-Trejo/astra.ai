@@ -34,7 +34,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <main className="bg-gradient-to-br from-gray-900 via-black to-gray-900 min-h-screen flex flex-col">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>
