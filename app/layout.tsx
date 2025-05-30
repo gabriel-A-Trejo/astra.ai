@@ -15,7 +15,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Astra AI",
-  description: "Prompt, run, edit, and deploy full-stack web and mobile apps.",
+  description:
+    "Astra AI lets you prompt, run, edit, and deploy full-stack web and mobile applications. Build, scale, and deploy faster with Astra.",
+  keywords: ["astra", "ai", "prompt", "run", "edit", "deploy"],
 };
 
 export default function MainLayout({
