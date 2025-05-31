@@ -22,8 +22,8 @@ const Hero = () => {
           />
           <textarea
             placeholder="Describe what you want to build..."
-            name=""
-            id=""
+            name="userInput"
+            id="userInput"
             className="w-full h-25 sm:h-36 lg:h-52 max-h-54 resize-none outline-none bg-transparent text-white placeholder-gray-400 p-4   rounded-2xl   no-scrollbar"
           />
           <aside className="flex flex-col items-center justify-center gap-2">
