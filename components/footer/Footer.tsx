@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
-
-const FooterLinks = [
-  { title: "Terms", href: "/terms" },
-  { title: "Privacy", href: "/privacy" },
-] as const;
+import { FooterLinks } from "@/constants/FooterLinks";
 
 const Footer = () => {
   const year = useMemo(() => new Date().getFullYear(), []);
