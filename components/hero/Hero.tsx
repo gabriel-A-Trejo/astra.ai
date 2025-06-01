@@ -1,7 +1,6 @@
 import React from "react";
-import { Button } from "../ui/button";
 
-import HeroTextareaAndBtn from "./HeroTextareaAndBtn";
+import HeroTextareaAndBtn from "./HeroTextareaAndSuggestion";
 
 const Hero = () => {
   return (
