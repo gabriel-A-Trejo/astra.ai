@@ -5,7 +5,6 @@ import { BorderTrail } from "../animations/BorderTrail";
 import { SUGGESTIONS } from "@/constants/Suggestion";
 import { useState } from "react";
 import AuthDialog from "../auth/AuthDialog";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 const HeroTextareaAndBtn = ({
   isAuthenticated,
@@ -18,6 +17,13 @@ const HeroTextareaAndBtn = ({
       setIsOpen(true);
     }
     // TODO: generate code
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleGenerate({ userInput: userInput });
+    }
   };
 
   return (
@@ -35,6 +41,7 @@ const HeroTextareaAndBtn = ({
             className="w-full h-25 sm:h-36 lg:h-52 max-h-54 resize-none outline-none bg-transparent text-white placeholder-gray-400 p-4   rounded-2xl   no-scrollbar"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
           {userInput && (
             <aside className="flex flex-col items-center justify-center gap-2">
