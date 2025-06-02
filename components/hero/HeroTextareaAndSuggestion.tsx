@@ -2,11 +2,12 @@ import React from "react";
 import { Button } from "../ui/button";
 import { ArrowBigRight, WandSparkles } from "lucide-react";
 import { BorderTrail } from "../animations/BorderTrail";
+import { SUGGESTIONS } from "@/constants/Suggestion";
 
 const HeroTextareaAndBtn = () => {
   return (
     <>
-      <section className="relative p-4 border mx-auto  rounded-2xl max-w-md sm:max-w-xl lg:max-w-3xl ">
+      <section className="relative p-4 border mx-auto  rounded-2xl max-w-md sm:max-w-xl lg:max-w-3xl  ">
         <div className="flex items-center  gap-2 p-2">
           <BorderTrail
             className="absolute inset-0 bg-gradient-to-l rounded-2xl animate-pulse from-blue-500/20 via-blue-800/30 to-gray-900/40"
@@ -41,7 +42,13 @@ const HeroTextareaAndBtn = () => {
         </Button>
       </section>
 
-      <section className="flex flex-wrap mx-auto"></section>
+      <section className="flex flex-wrap justify-center items-center gap-5 max-w-2xl mx-auto py-4 ">
+        {SUGGESTIONS.map((Suggestion) => (
+          <Button variant="outline" key={Suggestion} className="rounded-2xl">
+            {Suggestion}
+          </Button>
+        ))}
+      </section>
     </>
   );
 };
