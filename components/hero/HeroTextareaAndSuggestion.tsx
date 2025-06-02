@@ -41,7 +41,7 @@ const HeroTextareaAndBtn = () => {
         </Button>
       </section>
 
-      <section></section>
+      <section className="flex flex-wrap mx-auto"></section>
     </>
   );
 };
