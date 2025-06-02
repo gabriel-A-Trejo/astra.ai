@@ -1,6 +1,5 @@
 import React from "react";
-
-import HeroTextareaAndBtn from "./HeroTextareaAndSuggestion";
+import WrapperTextAreaAndSuggestion from "./wrapperTextAreaAndSuggestion";
 
 const Hero = () => {
   return (
@@ -13,7 +12,7 @@ const Hero = () => {
           prompt, run, edit, and deploy full-stack web and mobile apps.
         </p>
       </header>
-      <HeroTextareaAndBtn />
+      <WrapperTextAreaAndSuggestion />
     </>
   );
 };
