@@ -1,21 +1,30 @@
 "use client";
 import { Button } from "../ui/button";
-import { ArrowBigRight, WandSparkles } from "lucide-react";
+import { ArrowBigRight, Sparkles } from "lucide-react";
 import { BorderTrail } from "../animations/BorderTrail";
 import { SUGGESTIONS } from "@/constants/Suggestion";
 import { useState } from "react";
 import AuthDialog from "../auth/AuthDialog";
+import { Toaster } from "../ui/sonner";
+import { toast } from "sonner";
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 const HeroTextareaAndBtn = ({
   isAuthenticated,
 }: Readonly<{ isAuthenticated: boolean | null }>) => {
   const [userInput, setUserInput] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isloading, setIsLoading] = useState(false);
 
   const handleGenerate = async ({ userInput }: { userInput: string }) => {
     if (!isAuthenticated) {
       setIsOpen(true);
+      toast.error("Please sign in to generate code");
+      return;
     }
+    console.log(userInput);
+    setIsLoading(true);
+
     // TODO: generate code
   };
 
@@ -26,8 +35,17 @@ const HeroTextareaAndBtn = ({
     }
   };
 
+  const handleImprovedPrompt = ({ userInput }: { userInput: string }) => {
+    if (!isAuthenticated) {
+      setIsOpen(true);
+      return;
+    }
+    console.log(userInput);
+  };
+
   return (
     <>
+      <Toaster position="bottom-center" richColors />;
       <section className="relative p-4 border mx-auto  rounded-2xl max-w-md sm:max-w-xl lg:max-w-3xl  ">
         <div className="flex items-center  gap-2 p-2">
           <BorderTrail
@@ -48,11 +66,17 @@ const HeroTextareaAndBtn = ({
               <Button
                 variant="outline"
                 size="lg"
-                className="cursor-pointer p-6 hover:bg-gray-800 transition"
+                className={
+                  isloading
+                    ? "animate-pulse cursor-pointer p-6 hover:bg-gray-800 transition "
+                    : "cursor-pointer p-6 hover:bg-gray-800 transition"
+                }
                 aria-label="send"
                 onClick={() => handleGenerate({ userInput: userInput })}
               >
-                <ArrowBigRight className="size-5" />
+                <ArrowBigRight
+                  className={isloading ? "animated-pulse size-5 " : "size-5"}
+                />
               </Button>
               <p className="text-sm text-gray-300">↵ Enter</p>
             </aside>
@@ -63,25 +87,25 @@ const HeroTextareaAndBtn = ({
           size="lg"
           className="cursor-pointer p-6 hover:bg-gray-800 transition"
           aria-label="improved prompt"
-          disabled
+          disabled={userInput.trim().split(/\s+/).filter(Boolean).length <= 6}
+          onClick={() => handleImprovedPrompt({ userInput: userInput })}
         >
-          <WandSparkles className="size-5" />
+          <Sparkles className={"size-5"} />
         </Button>
       </section>
-
       <section className="flex flex-wrap justify-center items-center gap-5 max-w-2xl mx-auto py-4 ">
         {SUGGESTIONS.map((Suggestion) => (
           <Button
             variant="outline"
             key={Suggestion}
             className="rounded-2xl cursor-pointer"
+            size="default"
             onClick={() => handleGenerate({ userInput: Suggestion })}
           >
-            {Suggestion}
+            <p>{Suggestion}</p>
           </Button>
         ))}
       </section>
-
       <AuthDialog openDialog={isOpen} closeDialog={() => setIsOpen(false)} />
     </>
   );
