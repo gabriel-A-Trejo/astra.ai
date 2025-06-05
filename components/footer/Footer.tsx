@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { FooterLinks } from "@/constants/FooterLinks";
