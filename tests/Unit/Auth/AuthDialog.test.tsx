@@ -76,16 +76,11 @@ describe("AuthDialog", () => {
   });
 
   it("calls closeDialog when dialog is closed", () => {
-    const { rerender } = render(
-      <AuthDialog openDialog={true} closeDialog={closeDialogMock} />
-    );
+    render(<AuthDialog openDialog={true} closeDialog={closeDialogMock} />);
 
-    // Simulate dialog close by changing openDialog prop
-    rerender(<AuthDialog openDialog={false} closeDialog={closeDialogMock} />);
-
-    // Or find a specific close button if one exists
-    // const closeButton = screen.getByRole("button", { name: /close/i });
-    // fireEvent.click(closeButton);
+    // Find and click the close button to test actual user interaction
+    const closeButton = screen.getByRole("button", { name: /close/i });
+    fireEvent.click(closeButton);
 
     expect(closeDialogMock).toHaveBeenCalled();
   });
