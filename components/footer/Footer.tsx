@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import React from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { FooterLinks } from "@/constants/FooterLinks";
 
 const Footer = () => {
-  const year = useMemo(() => new Date().getFullYear(), []);
+  const year = new Date().getFullYear();
 
   return (
     <footer className="flex justify-between items-center border-gray-600/80 p-4">
