@@ -7,7 +7,7 @@ import { useState } from "react";
 import AuthDialog from "../auth/AuthDialog";
 import { Toaster } from "../ui/sonner";
 import { toast } from "sonner";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { Description } from "@radix-ui/react-dialog";
 
 const HeroTextareaAndBtn = ({
   isAuthenticated,
@@ -19,13 +19,16 @@ const HeroTextareaAndBtn = ({
   const handleGenerate = async ({ userInput }: { userInput: string }) => {
     if (!isAuthenticated) {
       setIsOpen(true);
-      toast.error("Please sign in to generate code");
+      toast.error("Please sign up or login to generate code");
       return;
     }
-    console.log(userInput);
+    if (!userInput) {
+      toast.error("Please enter a prompt to generate code");
+      return;
+    }
     setIsLoading(true);
-
-    // TODO: generate code
+    try {
+    } catch (error) {}
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
