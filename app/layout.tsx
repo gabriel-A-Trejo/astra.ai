@@ -3,6 +3,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Metadata } from "next/dist/lib/metadata/types/metadata-interface";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,21 +31,23 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
+    <AuthProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <main className=" fixed bg-gradient-to-br from-gray-900 via-black to-gray-900 w-full h-full flex flex-col">
-            {children}
-          </main>
-        </ThemeProvider>
-      </body>
-    </html>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <main className=" fixed bg-gradient-to-br from-gray-900 via-black to-gray-900 w-full h-full flex flex-col">
+              <ConvexClientProvider>{children}</ConvexClientProvider>
+            </main>
+          </ThemeProvider>
+        </body>
+      </html>
+    </AuthProvider>
   );
 }
