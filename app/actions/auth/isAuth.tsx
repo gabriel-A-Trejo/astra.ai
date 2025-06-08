@@ -1,10 +1,18 @@
 "use server";
 
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { cache } from "react";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
-export const isAuthenticated = cache(async () => {
-  const { isAuthenticated } = getKindeServerSession();
-  const isUserAuthenticated = await isAuthenticated();
-  return isUserAuthenticated;
+export const getAuthSession = cache(async () => {
+  const { isAuthenticated, getUser } = getKindeServerSession();
+
+  const [authenticated, user] = await Promise.all([
+    isAuthenticated(),
+    getUser(),
+  ]);
+
+  return {
+    isAuthenticated: authenticated,
+    userId: user?.id ?? null,
+  };
 });
