@@ -7,28 +7,65 @@ import { useState } from "react";
 import AuthDialog from "../auth/AuthDialog";
 import { Toaster } from "../ui/sonner";
 import { toast } from "sonner";
-import { Description } from "@radix-ui/react-dialog";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
 
+type HeroTextareaAndBtnProps = Readonly<{
+  isAuthenticated: boolean | null;
+  userId: string | null;
+}>;
 const HeroTextareaAndBtn = ({
   isAuthenticated,
-}: Readonly<{ isAuthenticated: boolean | null }>) => {
+  userId,
+}: HeroTextareaAndBtnProps) => {
   const [userInput, setUserInput] = useState<string>("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isloading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const createWorkspace = useMutation(api.workspace.createWorkspace);
 
   const handleGenerate = async ({ userInput }: { userInput: string }) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !userId) {
       setIsOpen(true);
       toast.error("Please sign up or login to generate code");
       return;
     }
-    if (!userInput) {
+
+    if (!userInput.trim()) {
       toast.error("Please enter a prompt to generate code");
       return;
     }
+
     setIsLoading(true);
     try {
-    } catch (error) {}
+      const workspace = await createWorkspace({
+        messages: [
+          {
+            role: "user",
+            content: userInput,
+          },
+        ],
+        userKindeId: userId,
+      });
+
+      if (!workspace || typeof workspace !== "string") {
+        throw new Error("Invalid workspace returned");
+      }
+
+      toast.success("Workspace created!", {
+        description: "Redirecting to your new workspace...",
+      });
+
+      router.push(`/workspaces/${workspace}`);
+      setUserInput(" ");
+    } catch (error: any) {
+      console.error("Error during workspace creation:", error);
+      toast.error(error?.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,12 +80,11 @@ const HeroTextareaAndBtn = ({
       setIsOpen(true);
       return;
     }
-    console.log(userInput);
   };
 
   return (
     <>
-      <Toaster position="bottom-center" richColors />;
+      <Toaster position="top-center" richColors />;
       <section className="relative p-4 border mx-auto  rounded-2xl max-w-md sm:max-w-xl lg:max-w-3xl  ">
         <div className="flex items-center  gap-2 p-2">
           <BorderTrail
