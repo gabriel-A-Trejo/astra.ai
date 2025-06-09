@@ -1,9 +1,14 @@
-import { isAuthenticated } from "@/app/actions/auth/isAuth";
+import { getAuthSession } from "@/app/actions/auth/isAuth";
 import HeroTextareaAndBtn from "./HeroTextareaAndSuggestion";
 
 const wrapperTextAreaAndSuggestion = async () => {
-  const isAuth = await isAuthenticated();
-  return <HeroTextareaAndBtn isAuthenticated={isAuth} />;
+  const { isAuthenticated, userId } = await getAuthSession();
+
+  return (
+    <>
+      <HeroTextareaAndBtn isAuthenticated={isAuthenticated} userId={userId} />
+    </>
+  );
 };
 
 export default wrapperTextAreaAndSuggestion;
