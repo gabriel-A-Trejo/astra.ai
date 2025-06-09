@@ -4,21 +4,30 @@ import { Button } from "../ui/button";
 import { ArrowBigRight, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { AiModelsDropDown } from "../AiModels/AiModelsDropDown";
+import { useMessage } from "@/store/messagesStore";
 
 const ChatView = () => {
   const [userInput, setUserInput] = useState("");
   const [isloading, setIsloading] = useState(false);
+  const { setMessage, messages, clearMessages } = useMessage();
 
   return (
     <section className="p-2 flex flex-col justify-center min-h-screen">
       <div className="flex-1 overflow-y-auto no-scrollbar max-h-[70vh]">
-        <div className="p-5  rounded-xl border mb-2 flex flex-col gap-2 item-center justify-start leading-7 border-white/10">
-          <h1 className="font-bold">You</h1>
+        {messages.map((message) => (
+          <div
+            className="p-5  rounded-xl border mb-2 flex flex-col gap-2 item-center justify-start leading-7 border-white/10"
+            key={message.id}
+          >
+            <h1 className="font-bold">
+              {message.role === "You" ? "You" : "AI"}
+            </h1>
 
-          <ReactMarkdown className="flex flex-col">
-            I am doing pretty good how about you? I amazing i today
-          </ReactMarkdown>
-        </div>
+            <ReactMarkdown className="flex flex-col">
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        ))}
       </div>
       <section className="border rounded-2xl  mb-20 p-1">
         <div className="flex items-center   gap-2 p-1">
