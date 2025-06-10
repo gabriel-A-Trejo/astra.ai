@@ -5,19 +5,37 @@ import { ArrowBigRight, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { AiModelsDropDown } from "../AiModels/AiModelsDropDown";
 import { useMessage } from "@/store/messagesStore";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
+import { Id } from "@/convex/_generated/dataModel";
 
-const ChatView = () => {
+type ChatViewProps = {
+  userKindeId: string;
+  workspaceStringId: string;
+};
+
+const ChatView = ({ userKindeId, workspaceStringId }: ChatViewProps) => {
   const [userInput, setUserInput] = useState("");
   const [isloading, setIsloading] = useState(false);
-  const { setMessage, messages, clearMessages } = useMessage();
+  const { setMessage, clearMessages } = useMessage();
+  const workspaceId = useQuery(api.workspace.getWorkspaceId, {
+    userKindeId,
+    workspaceStringId,
+  });
+
+  const messages =
+    workspaceId &&
+    useQuery(api.messages.getMessagesByWorkspace, {
+      workspaceId: workspaceId as Id<"workspace">,
+    });
 
   return (
     <section className="p-2 flex flex-col justify-center min-h-screen">
       <div className="flex-1 overflow-y-auto no-scrollbar max-h-[70vh]">
-        {messages.map((message) => (
+        {messages?.map((message) => (
           <div
             className="p-5  rounded-xl border mb-2 flex flex-col gap-2 item-center justify-start leading-7 border-white/10"
-            key={message.id}
+            key={message._id}
           >
             <h1 className="font-bold">
               {message.role === "You" ? "You" : "AI"}
