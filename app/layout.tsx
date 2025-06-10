@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Metadata } from "next/dist/lib/metadata/types/metadata-interface";
-import { Toaster } from "@/components/ui/sonner";
+
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 
@@ -33,6 +33,10 @@ export default function MainLayout({
   return (
     <AuthProvider>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_CONVEX_URL} />
+          <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_CONVEX_URL} />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
