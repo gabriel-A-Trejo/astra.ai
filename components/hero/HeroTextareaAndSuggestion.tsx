@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
+import { useMessage } from "@/store/messagesStore";
+import { v4 as uuidv4 } from "uuid";
+import { Id } from "@/convex/_generated/dataModel";
 
 type HeroTextareaAndBtnProps = Readonly<{
   isAuthenticated: boolean | null;
@@ -22,9 +25,11 @@ const HeroTextareaAndBtn = ({
   const [userInput, setUserInput] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isloading, setIsLoading] = useState(false);
+  const { setMessage, clearMessages } = useMessage();
   const router = useRouter();
 
-  const createWorkspace = useMutation(api.workspace.createWorkspace);
+  const createWorkspace = useMutation(api.workspace.createWorkspaceWithMessage);
+  const updateMessage = useMutation(api.messages.addMessage);
 
   const handleGenerate = async ({ userInput }: { userInput: string }) => {
     if (!isAuthenticated || !userId) {
@@ -40,29 +45,59 @@ const HeroTextareaAndBtn = ({
 
     setIsLoading(true);
     try {
+      const currentInput = userInput;
+      setUserInput("");
+
+      const workspaceStringId = uuidv4();
       const workspace = await createWorkspace({
-        messages: [
-          {
-            role: "user",
-            content: userInput,
-          },
-        ],
         userKindeId: userId,
+        workspaceStringId: workspaceStringId,
+        initialMessage: {
+          role: "You",
+          content: userInput,
+        },
       });
 
       if (!workspace || typeof workspace !== "string") {
         throw new Error("Invalid workspace returned");
       }
 
+      GenerateResponse(currentInput, workspace);
+
       toast.success("Workspace created!", {
         description: "Redirecting to your new workspace...",
       });
 
-      router.push(`/workspaces/${workspace}`);
-      setUserInput(" ");
+      router.push(`/workspaces/${workspaceStringId}`);
     } catch (error: any) {
       console.error("Error during workspace creation:", error);
       toast.error(error?.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const GenerateResponse = async (
+    prompt: string,
+    getWorkspaceId: Id<"workspace">
+  ) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/ai/chatResponse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!response.ok) throw new Error("Failed to send message");
+      const AiResponse = await response.json();
+
+      await updateMessage({
+        workspaceId: getWorkspaceId as Id<"workspace">,
+        content: AiResponse.response,
+        role: "AI",
+      });
+    } catch (error) {
+      toast.error("Failed to send message");
     } finally {
       setIsLoading(false);
     }
