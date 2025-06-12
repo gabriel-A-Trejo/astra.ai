@@ -15,7 +15,7 @@ export const AiModelsDropDown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost">
+        <Button aria-label="AI Models" title="AI models" variant="ghost">
           <Bot className="size-5" />
         </Button>
       </DropdownMenuTrigger>
