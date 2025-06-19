@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { getAuthSession } from "@/app/actions/auth/isAuth";
-import { chatPrompt } from "@/data/chatPrompt";
+import { improvementPrompt } from "@/data/improvementPrompt";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-async function chatSession(prompt: string) {
+async function improvingPrompts(prompt: string) {
   const result = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
     config: {
-      systemInstruction: chatPrompt,
-      maxOutputTokens: 500,
-      temperature: 0.7,
+      systemInstruction: improvementPrompt,
+      maxOutputTokens: 150,
+      temperature: 0.5,
       topK: 40,
       topP: 0.9,
     },
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
 
     const { prompt } = await req.json();
 
-    const response = await chatSession(prompt);
+    const improved = await improvingPrompts(prompt);
 
-    return NextResponse.json({ response }, { status: 200 });
+    return NextResponse.json({ improved }, { status: 200 });
   } catch (err) {
     console.error("Chat error:", err);
     return NextResponse.json(
