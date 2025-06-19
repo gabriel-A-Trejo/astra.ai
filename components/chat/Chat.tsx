@@ -1,177 +1,124 @@
 "use client";
-import ReactMarkdown from "react-markdown";
-import { Button } from "../ui/button";
-import { ArrowBigRight, Loader2, Sparkles } from "lucide-react";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { AiModelsDropDown } from "../AiModels/AiModelsDropDown";
-import { api } from "@/convex/_generated/api";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { Id } from "@/convex/_generated/dataModel";
-import { Toaster } from "../ui/sonner";
-import { toast } from "sonner";
-import rehypeSanitize from "rehype-sanitize";
-import { TextShimmer } from "../animations/text-shimmer";
 
-const ChatView = ({
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { toast, Toaster } from "sonner";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useImprovePrompt } from "@/hooks/useImprovePrompt";
+import { useGenerateResponse } from "@/hooks/useGeneratesResponse";
+import { ChatViewProps } from "@/types/chat.types";
+import { MessageList } from "./MessageList";
+import { MessageInput } from "./MessageInput";
+import { WorkspaceError } from "./WorkspaceError";
+import { useChatLogic } from "@/hooks/useChatLogic";
+import { useWorkspaceValidation } from "@/hooks/useWorkspaceValidation";
+
+type Message = {
+  role: "You" | "AI";
+  content: string;
+  _id: Id<"messages">;
+  _creationTime: number;
+  workspaceId: Id<"workspace">;
+};
+
+const ChatView: React.FC<ChatViewProps> = ({
   userKindeId,
   workspaceIdParam,
-}: Readonly<{ userKindeId: string; workspaceIdParam: string }>) => {
+}) => {
+  const router = useRouter();
   const [userInput, setUserInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const prevMessageCountRef = useRef<number>(0);
+  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
+  const originalPromptRef = useRef<string>("");
 
-  const updateMessage = useMutation(api.messages.addMessage);
-  const getWorkspaceId = useQuery(api.workspace.getWorkspaceId, {
+  const workspaceState = useWorkspaceValidation(
     userKindeId,
-    workspaceStringId: workspaceIdParam,
-  });
+    workspaceIdParam,
+    router
+  );
 
   const {
-    results: messages,
+    messages,
     status,
-    loadMore,
-  } = usePaginatedQuery(
-    api.messages.getMessagesByWorkspace,
-    getWorkspaceId
-      ? { workspaceId: getWorkspaceId as Id<"workspace"> }
-      : "skip",
-    { initialNumItems: 20 }
+    messagesEndRef,
+    messagesContainerRef,
+    setShouldAutoScroll,
+    handleScroll,
+  } = useChatLogic(workspaceState.workspaceId, workspaceState.error);
+
+  const {
+    generateResponse,
+    isGenerating,
+    cleanup: cleanupGenerateResponse,
+  } = useGenerateResponse(
+    workspaceState.workspaceId ?? undefined,
+    workspaceState.error
   );
 
-  const handleScroll = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
+  const { handleImprovePrompt, handleRevertPrompt, hasOriginalPrompt } =
+    useImprovePrompt({ setIsImprovingPrompt, originalPromptRef });
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const isNearTop = scrollTop < 100;
-
-    if (isNearTop && status === "CanLoadMore") {
-      loadMore(10);
-    }
-
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
-    setShouldAutoScroll(isAtBottom);
-  }, [status, loadMore]);
-
-  const scrollHandler = useMemo(() => {
-    let timeoutId: NodeJS.Timeout;
-    return () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleScroll, 100);
-    };
-  }, [handleScroll]);
+  const addMessage = useMutation(api.messages.addMessage);
 
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
+    if (!messages?.length || isGenerating) return;
 
-    container.addEventListener("scroll", scrollHandler);
-    return () => container.removeEventListener("scroll", scrollHandler);
-  }, [scrollHandler]);
+    const [firstMessage] = messages;
+    const isOnlyUserMessage =
+      messages.length === 1 && firstMessage.role === "You";
+    const hasAIResponse = messages.some((m) => m.role === "AI");
 
-  useEffect(() => {
-    const prevCount = prevMessageCountRef.current;
-    const currentCount = messages.length;
-    const isAppended = currentCount > prevCount;
-
-    if (shouldAutoScroll && isAppended && currentCount != 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isOnlyUserMessage && !hasAIResponse) {
+      generateResponse(firstMessage.content);
     }
+  }, [messages, isGenerating, generateResponse]);
 
-    prevMessageCountRef.current = currentCount;
-  }, [messages, shouldAutoScroll]);
+  useEffect(() => cleanupGenerateResponse, [cleanupGenerateResponse]);
 
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const isLoading = isSending || isGenerating;
-  const canSend = userInput.trim() && !isLoading && getWorkspaceId;
-
-  const generateResponse = useCallback(
-    async (prompt: string) => {
-      if (!getWorkspaceId) return;
-      setIsGenerating(true);
-      abortControllerRef.current = new AbortController();
-
-      try {
-        const response = await fetch("/api/ai/chatResponse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-          signal: abortControllerRef.current.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const aiResponse = await response.json();
-
-        await updateMessage({
-          workspaceId: getWorkspaceId as Id<"workspace">,
-          content: aiResponse.response,
-          role: "AI",
-        });
-
-        toast.success("Response generated successfully");
-      } catch (error: any) {
-        if (error.name === "AbortError") return;
-        console.error("AI response error:", error);
-        toast.error(
-          error.message.includes("HTTP")
-            ? "AI service temporarily unavailable"
-            : "Failed to generate response"
-        );
-      } finally {
-        setIsGenerating(false);
-        abortControllerRef.current = null;
-      }
-    },
-    [getWorkspaceId, updateMessage]
-  );
-
-  const HandleImprovePrompt = async () => {
-    try {
-    } catch (error: any) {
-      console.error("Improve prompt error:", error);
-      toast.error("Failed to improve prompt");
-    }
-  };
+  const isLoading = isSending || isGenerating || isImprovingPrompt;
+  const canSend =
+    userInput.trim() &&
+    !isLoading &&
+    workspaceState.workspaceId &&
+    !workspaceState.error;
 
   const handleSendMessage = useCallback(async () => {
     if (!canSend) return;
-    const currentInput = userInput.trim();
+
+    const input = userInput.trim();
     setUserInput("");
     setIsSending(true);
     setShouldAutoScroll(true);
+    originalPromptRef.current = "";
 
     try {
-      await updateMessage({
-        workspaceId: getWorkspaceId as Id<"workspace">,
-        content: currentInput,
+      await addMessage({
+        workspaceId: workspaceState.workspaceId as Id<"workspace">,
+        content: input,
         role: "You",
       });
 
-      await generateResponse(currentInput);
-    } catch (error: any) {
-      console.error("Send message error:", error);
+      await generateResponse(input);
+    } catch (err) {
+      console.error("Failed to send message:", err);
       toast.error("Failed to send message");
-      setUserInput(currentInput);
+      setUserInput(input);
     } finally {
       setIsSending(false);
     }
-  }, [canSend, userInput, getWorkspaceId, updateMessage, generateResponse]);
+  }, [
+    canSend,
+    userInput,
+    workspaceState.workspaceId,
+    addMessage,
+    generateResponse,
+    setShouldAutoScroll,
+  ]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey && canSend) {
         e.preventDefault();
         handleSendMessage();
@@ -180,113 +127,39 @@ const ChatView = ({
     [canSend, handleSendMessage]
   );
 
-  const wordCount = userInput.trim().split(/\s+/).filter(Boolean).length;
-  const canImprovePrompt = wordCount > 6 && !isLoading;
+  if (workspaceState.error) {
+    return <WorkspaceError onNavigateHome={() => router.push("/")} />;
+  }
 
   return (
     <main className="relative p-2 flex flex-col h-[90vh]">
       <Toaster position="top-center" richColors />
 
-      <section
+      <MessageList
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto no-scrollbar"
-      >
-        {status === "LoadingFirstPage" ? (
-          <div className="p-5 text-gray-400 animate-pulse">
-            Loading messages...
-          </div>
-        ) : (
-          <>
-            {status === "LoadingMore" && prevMessageCountRef.current !== 0 && (
-              <div className="flex justify-center p-4">
-                <div className="flex items-center gap-2 text-gray-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Loading older messages...</span>
-                </div>
-              </div>
-            )}
+        messages={messages as Message[]}
+        status={status}
+        isGenerating={isGenerating}
+        onScroll={handleScroll}
+        messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+      />
 
-            {messages
-              .slice()
-              .reverse()
-              .map((message) => (
-                <div
-                  key={message._id}
-                  className="p-5 rounded-xl border mb-2 max-h-screen"
-                >
-                  <h1 className="font-bold mb-2">
-                    {message.role === "You" ? "You" : "AI"}
-                  </h1>
-                  <ReactMarkdown
-                    rehypePlugins={[rehypeSanitize]}
-                    className="prose prose-invert max-w-none"
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              ))}
-
-            {isGenerating && (
-              <div className="flex items-center gap-2 p-5 rounded-xl border mb-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                <TextShimmer className="font-mono text-sm" duration={1}>
-                  Generating response...
-                </TextShimmer>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </section>
-
-      <section className="border rounded-2xl p-1">
-        <div className="flex items-center justify-center gap-2 p-1">
-          <textarea
-            placeholder="What should we do next?"
-            className="w-full resize-none outline-none bg-transparent text-white placeholder-gray-400 p-4 rounded-2xl no-scrollbar min-h-[60px] max-h-[200px]"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            rows={1}
-          />
-
-          {userInput && (
-            <aside className="flex flex-col items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="lg"
-                className="cursor-pointer p-6 hover:bg-gray-800 transition disabled:opacity-50"
-                aria-label="send message"
-                disabled={!canSend}
-                onClick={handleSendMessage}
-              >
-                {isSending ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <ArrowBigRight className="size-5" />
-                )}
-              </Button>
-              {!isLoading && <p className="text-sm text-gray-300">↵ Enter</p>}
-            </aside>
-          )}
-        </div>
-
-        <section className="flex items-center gap-5">
-          <Button
-            variant="ghost"
-            size="lg"
-            className="cursor-pointer p-6 hover:bg-gray-800 transition disabled:opacity-50"
-            aria-label="improve prompt"
-            disabled={!canImprovePrompt}
-            onClick={() => HandleImprovePrompt}
-          >
-            <Sparkles className="size-5" />
-          </Button>
-          <AiModelsDropDown />
-        </section>
-      </section>
+      <MessageInput
+        userInput={userInput}
+        setUserInput={setUserInput}
+        onSendMessage={handleSendMessage}
+        onKeyDown={handleKeyDown}
+        isLoading={isLoading}
+        canSend={!!canSend}
+        workspaceError={workspaceState.error}
+        isSending={isSending}
+        isImprovingPrompt={isImprovingPrompt}
+        handleImprovePrompt={(prompt) =>
+          handleImprovePrompt(prompt, setUserInput)
+        }
+        handleRevertPrompt={() => handleRevertPrompt(setUserInput)}
+        hasOriginalPrompt={hasOriginalPrompt}
+      />
     </main>
   );
 };
