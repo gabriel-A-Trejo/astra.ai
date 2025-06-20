@@ -54,3 +54,16 @@ export const getWorkspaceId = query({
     return workspace._id;
   },
 });
+
+export const getfirstMessage = query({
+  args: {
+    workspaceId: v.id("workspace"),
+  },
+  handler: async (ctx, { workspaceId }) => {
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_workspaceId", (q) => q.eq("workspaceId", workspaceId))
+      .order("asc")
+      .first();
+  },
+});
