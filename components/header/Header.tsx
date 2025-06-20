@@ -1,15 +1,21 @@
 import React from "react";
 import Logo from "./Logo";
 import AuthButton from "./AuthButton";
+import { getAuthSession } from "@/app/actions/auth/isAuth";
+import HeroTitle from "@/components/header/HeaderTitle";
 
-const Header = () => {
+const Header = async () => {
+  const { userId } = await getAuthSession();
+
   return (
-    <header className=" top-0 left-0 right-0 z-50 p-4">
-      <section className="flex justify-between items-center mx-auto ">
+    <header className="  p-4">
+      <section
+        className={`flex ${!userId ? "justify-between" : "justify-around"} justify-between items-center mx-auto `}
+      >
         <Logo />
-        <nav className="flex gap-3">
-          <AuthButton />
-        </nav>
+        {userId && <HeroTitle userKindeId={userId} />}
+
+        <nav className="flex gap-3">{!userId && <AuthButton />}</nav>
       </section>
     </header>
   );
