@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Suspense } from "react";
 import { LoaderCircle } from "lucide-react";
 import ChatView from "@/components/chat/Chat";
+import CodeView from "@/components/IDE/CodeView";
 
 const convexClient = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -34,7 +35,7 @@ const WorkspaceSection = async ({
   }
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-3">
+    <section className="grid grid-cols-1 md:grid-cols-3 ">
       <Suspense
         fallback={
           <div className="flex justify-center items-center gap-10">
@@ -45,6 +46,9 @@ const WorkspaceSection = async ({
       >
         <ChatView workspaceIdParam={id} userKindeId={userId} />
       </Suspense>
+      <div className="col-span-2">
+        <CodeView />
+      </div>
     </section>
   );
 };
